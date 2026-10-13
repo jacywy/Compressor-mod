@@ -35,6 +35,13 @@
     <string name="delete_original_success">Video deleted successfully</string>
     <string name="delete_original_failed">Failed to delete video</string>
     <string name="delete_confirm_title">Delete Original?</string>
+    <string name="delete_confirm_message">Are you sure you want to delete the original video? This will free up storage.</string>
+    <string name="original_deleted">Original Video Deleted</string>
+    <string name="auto_delete_original">Delete original after saving</string>
+    <string name="play_video_title">Play Compressed Video</string>
+    <string name="open_in_external_player">Open in External Player</string>
+    <string name="save_to_original_path">Save to Original Folder</string>
+    <string name="original_deleted_success">Original video deleted successfully</string>
     
     <string name="info_title">Device &amp; App Info</string>
     <string name="info_copy_clipboard">Copy to Clipboard</string>

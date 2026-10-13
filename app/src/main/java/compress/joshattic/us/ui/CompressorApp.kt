@@ -1,6 +1,7 @@
 package compress.joshattic.us.ui
 
 import compress.joshattic.us.ui.components.WhatsNewDialog
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.view.WindowManager
@@ -9,6 +10,7 @@ import androidx.activity.BackEventCompat
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
@@ -178,6 +180,43 @@ fun CompressorApp(viewModel: CompressorViewModel) {
         } catch (e: Exception) {
             Toast.makeText(context, shareErrorTemplate.format(e.message), Toast.LENGTH_SHORT).show()
         }
+    }
+
+    val playVideoTitle = stringResource(R.string.play_video_title)
+    val deleteMediaLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            viewModel.onOriginalDeleted()
+            Toast.makeText(context, context.getString(R.string.delete_original_success), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun playVideoExternally(uri: Uri?) {
+        if (uri == null) return
+        try {
+            val file = File(uri.path!!)
+            val contentUri = FileProvider.getUriForFile(context, context.packageName + ".provider", file)
+            val playIntent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(contentUri, "video/mp4")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(Intent.createChooser(playIntent, playVideoTitle))
+        } catch (e: Exception) {
+            Toast.makeText(context, e.localizedMessage ?: "Failed to open video player", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun deleteOriginalVideo() {
+        viewModel.deleteOriginalVideo(
+            context = context,
+            onSenderRequired = { sender ->
+                deleteMediaLauncher.launch(IntentSenderRequest.Builder(sender).build())
+            },
+            onSuccess = {
+                Toast.makeText(context, context.getString(R.string.delete_original_success), Toast.LENGTH_SHORT).show()
+            }
+        )
     }
 
     Box(
@@ -376,13 +415,21 @@ fun CompressorApp(viewModel: CompressorViewModel) {
                                                     if (hasCustomLocation ||
                                                         android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q
                                                     ) {
-                                                        viewModel.saveCompressedOutput(context)
+                                                        viewModel.saveCompressedOutput(context) { success ->
+                                                            if (success && state.autoDeleteOriginal && !state.isOriginalDeleted) {
+                                                                deleteOriginalVideo()
+                                                            }
+                                                        }
                                                     } else {
                                                         val fileName = state.compressedUri?.lastPathSegment
                                                             ?: "CompressedVideo.mp4"
                                                         createDocumentLauncher.launch(fileName)
                                                     }
                                                 },
+                                                onPlayExternal = { playVideoExternally(state.compressedUri) },
+                                                onDeleteOriginal = { deleteOriginalVideo() },
+                                                onToggleSaveToOriginal = { viewModel.setSaveToOriginalDirectory(it) },
+                                                onToggleAutoDeleteOriginal = { viewModel.setAutoDeleteOriginal(it) },
                                                 onCompressAnother = { viewModel.reset() },
                                                 onBack = { viewModel.reset() }
                                             )

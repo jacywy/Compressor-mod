@@ -1,9 +1,11 @@
 package compress.joshattic.us.viewmodel
 
 import android.app.Application
+import android.app.RecoverableSecurityException
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.content.IntentSender
 import android.content.SharedPreferences
 import android.media.MediaCodecList
 import android.media.MediaExtractor
@@ -118,6 +120,8 @@ class CompressorViewModel(application: Application) : AndroidViewModel(applicati
         val showTargetSizePreset = prefs.getBoolean("show_target_size_preset", true)
         val autoSaveSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
         val autoSaveToPhotos = autoSaveSupported && prefs.getBoolean("auto_save_photos", true)
+        val saveToOriginalDirectory = prefs.getBoolean("save_to_original_path", true)
+        val autoDeleteOriginal = prefs.getBoolean("auto_delete_original", false)
         val customOutputTreeUri = prefs.getString(PREF_CUSTOM_OUTPUT_TREE_URI, null)
         val customOutputFolderName = prefs.getString(PREF_CUSTOM_OUTPUT_FOLDER_NAME, null)
         val highConfig = loadQualityPresetConfig("preset_high", QualityPresetConfig(resolutionShortSide = 0, targetFps = 0, sizeRatio = 0.7f, audioBitrate = 320_000))
@@ -148,6 +152,8 @@ class CompressorViewModel(application: Application) : AndroidViewModel(applicati
             showStorageSaved = showStorageSaved,
             showTargetSizePreset = showTargetSizePreset,
             autoSaveToPhotos = autoSaveToPhotos,
+            saveToOriginalDirectory = saveToOriginalDirectory,
+            autoDeleteOriginal = autoDeleteOriginal,
             customOutputTreeUri = customOutputTreeUri,
             customOutputFolderName = customOutputFolderName,
             highPresetConfig = highConfig,
@@ -367,6 +373,26 @@ class CompressorViewModel(application: Application) : AndroidViewModel(applicati
                     }
                 }
 
+                var relativePath: String? = null
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    try {
+                        context.contentResolver.query(
+                            uri,
+                            arrayOf(MediaStore.Video.Media.RELATIVE_PATH),
+                            null,
+                            null,
+                            null
+                        )?.use { relCursor ->
+                            if (relCursor.moveToFirst()) {
+                                val relIdx = relCursor.getColumnIndex(MediaStore.Video.Media.RELATIVE_PATH)
+                                if (relIdx != -1 && !relCursor.isNull(relIdx)) {
+                                    relativePath = relCursor.getString(relIdx)
+                                }
+                            }
+                        }
+                    } catch (_: Exception) {}
+                }
+
                 val retriever = android.media.MediaMetadataRetriever()
                 retriever.setDataSource(context, uri)
 
@@ -454,7 +480,9 @@ class CompressorViewModel(application: Application) : AndroidViewModel(applicati
                     errorLog = null,
                     saveSuccess = false,
                     isSaving = false,
-                    hasShared = false
+                    hasShared = false,
+                    originalRelativePath = relativePath,
+                    isOriginalDeleted = false
                 ).autoAdjust(defaultTargetMb)
             }
         }
@@ -1115,12 +1143,12 @@ class CompressorViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     /** Saves using the configured location: custom SAF folder, or default Photos gallery. */
-    fun saveCompressedOutput(context: Context) {
+    fun saveCompressedOutput(context: Context, onComplete: ((Boolean) -> Unit)? = null) {
         val treeUri = _uiState.value.customOutputTreeUri
         if (!treeUri.isNullOrBlank()) {
-            saveToCustomTree(context, Uri.parse(treeUri))
+            saveToCustomTree(context, Uri.parse(treeUri), onComplete)
         } else {
-            saveToGallery(context)
+            saveToGallery(context, onComplete)
         }
     }
 
@@ -1840,7 +1868,7 @@ class CompressorViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    private fun saveToCustomTree(context: Context, treeUri: Uri) {
+    private fun saveToCustomTree(context: Context, treeUri: Uri, onComplete: ((Boolean) -> Unit)? = null) {
         val currentState = _uiState.value
         if (currentState.isSaving) return
         val compressedUri = currentState.compressedUri ?: return
@@ -1852,6 +1880,7 @@ class CompressorViewModel(application: Application) : AndroidViewModel(applicati
                 val file = File(compressedUri.path!!)
                 if (!file.exists()) {
                     _uiState.update { it.copy(error = getApplication<Application>().getString(R.string.error_file_lost)) }
+                    withContext(Dispatchers.Main) { onComplete?.invoke(false) }
                     return@launch
                 }
 
@@ -1860,6 +1889,7 @@ class CompressorViewModel(application: Application) : AndroidViewModel(applicati
                     _uiState.update {
                         it.copy(error = getApplication<Application>().getString(R.string.error_save_failed, "Folder not writable"))
                     }
+                    withContext(Dispatchers.Main) { onComplete?.invoke(false) }
                     return@launch
                 }
 
@@ -1870,6 +1900,7 @@ class CompressorViewModel(application: Application) : AndroidViewModel(applicati
                     _uiState.update {
                         it.copy(error = getApplication<Application>().getString(R.string.error_gallery_entry))
                     }
+                    withContext(Dispatchers.Main) { onComplete?.invoke(false) }
                     return@launch
                 }
 
@@ -1881,22 +1912,25 @@ class CompressorViewModel(application: Application) : AndroidViewModel(applicati
                     _uiState.update {
                         it.copy(error = getApplication<Application>().getString(R.string.error_save_failed, "No output stream"))
                     }
+                    withContext(Dispatchers.Main) { onComplete?.invoke(false) }
                     return@launch
                 }
 
                 _uiState.update { it.copy(saveSuccess = true) }
+                withContext(Dispatchers.Main) { onComplete?.invoke(true) }
             } catch (e: Exception) {
                 e.printStackTrace()
                 _uiState.update {
                     it.copy(error = getApplication<Application>().getString(R.string.error_save_failed, e.message))
                 }
+                withContext(Dispatchers.Main) { onComplete?.invoke(false) }
             } finally {
                 _uiState.update { it.copy(isSaving = false) }
             }
         }
     }
 
-    fun saveToGallery(context: Context) {
+    fun saveToGallery(context: Context, onComplete: ((Boolean) -> Unit)? = null) {
         val currentState = _uiState.value
         if (currentState.isSaving) return
         val compressedUri = currentState.compressedUri ?: return
@@ -1908,6 +1942,7 @@ class CompressorViewModel(application: Application) : AndroidViewModel(applicati
                 val file = File(compressedUri.path!!)
                 if (!file.exists()) {
                     _uiState.update { it.copy(error = getApplication<Application>().getString(R.string.error_file_lost)) }
+                    withContext(Dispatchers.Main) { onComplete?.invoke(false) }
                     return@launch
                 }
 
@@ -1927,7 +1962,12 @@ class CompressorViewModel(application: Application) : AndroidViewModel(applicati
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                         put(MediaStore.Video.Media.IS_PENDING, 1)
-                        put(MediaStore.Video.Media.RELATIVE_PATH, Environment.DIRECTORY_MOVIES + "/Compressor")
+                        val targetFolder = if (currentState.saveToOriginalDirectory && !currentState.originalRelativePath.isNullOrBlank()) {
+                            currentState.originalRelativePath
+                        } else {
+                            Environment.DIRECTORY_MOVIES + "/Compressor"
+                        }
+                        put(MediaStore.Video.Media.RELATIVE_PATH, targetFolder)
                     }
                 }
 
@@ -1953,14 +1993,76 @@ class CompressorViewModel(application: Application) : AndroidViewModel(applicati
                     }
                     
                     _uiState.update { it.copy(saveSuccess = true) }
+                    withContext(Dispatchers.Main) { onComplete?.invoke(true) }
                 } else {
-                     _uiState.update { it.copy(error = getApplication<Application>().getString(R.string.error_gallery_entry)) }
+                    _uiState.update { it.copy(error = getApplication<Application>().getString(R.string.error_gallery_entry)) }
+                    withContext(Dispatchers.Main) { onComplete?.invoke(false) }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
                 _uiState.update { it.copy(error = getApplication<Application>().getString(R.string.error_save_failed, e.message)) }
+                withContext(Dispatchers.Main) { onComplete?.invoke(false) }
             } finally {
                 _uiState.update { it.copy(isSaving = false) }
+            }
+        }
+    }
+
+    fun setSaveToOriginalDirectory(enabled: Boolean) {
+        prefs.edit().putBoolean("save_to_original_path", enabled).apply()
+        _uiState.update { it.copy(saveToOriginalDirectory = enabled) }
+    }
+
+    fun setAutoDeleteOriginal(enabled: Boolean) {
+        prefs.edit().putBoolean("auto_delete_original", enabled).apply()
+        _uiState.update { it.copy(autoDeleteOriginal = enabled) }
+    }
+
+    fun onOriginalDeleted() {
+        _uiState.update { it.copy(isOriginalDeleted = true) }
+    }
+
+    fun deleteOriginalVideo(
+        context: Context,
+        onSenderRequired: (IntentSender) -> Unit,
+        onSuccess: () -> Unit = {}
+    ) {
+        val uri = _uiState.value.selectedUri ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    val pendingIntent = MediaStore.createDeleteRequest(context.contentResolver, listOf(uri))
+                    withContext(Dispatchers.Main) {
+                        onSenderRequired(pendingIntent.intentSender)
+                    }
+                } else if (DocumentsContract.isDocumentUri(context, uri)) {
+                    val deleted = DocumentsContract.deleteDocument(context.contentResolver, uri)
+                    if (deleted) {
+                        withContext(Dispatchers.Main) {
+                            onOriginalDeleted()
+                            onSuccess()
+                        }
+                    }
+                } else {
+                    val count = context.contentResolver.delete(uri, null, null)
+                    if (count > 0) {
+                        withContext(Dispatchers.Main) {
+                            onOriginalDeleted()
+                            onSuccess()
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q && e is RecoverableSecurityException) {
+                    withContext(Dispatchers.Main) {
+                        onSenderRequired(e.userAction.actionIntent.intentSender)
+                    }
+                } else {
+                    e.printStackTrace()
+                    _uiState.update {
+                        it.copy(error = getApplication<Application>().getString(R.string.delete_original_failed) + ": " + e.message)
+                    }
+                }
             }
         }
     }

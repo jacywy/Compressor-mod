@@ -68,6 +68,10 @@ data class CompressorUiState(
     val showTargetSizePreset: Boolean = true,
     /** Only meaningful on Android 10+; forced off on older versions. */
     val autoSaveToPhotos: Boolean = false,
+    val originalRelativePath: String? = null,
+    val isOriginalDeleted: Boolean = false,
+    val saveToOriginalDirectory: Boolean = true,
+    val autoDeleteOriginal: Boolean = false,
     val customOutputTreeUri: String? = null,
     val customOutputFolderName: String? = null,
     val hasShared: Boolean = false,

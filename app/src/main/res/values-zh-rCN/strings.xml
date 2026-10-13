@@ -33,6 +33,13 @@
     <string name="delete_original_success">原视频已成功删除</string>
     <string name="delete_original_failed">删除视频失败</string>
     <string name="delete_confirm_title">确认删除原视频？</string>
+    <string name="delete_confirm_message">确定要删除原视频吗？删除后将释放设备存储空间。</string>
+    <string name="original_deleted">原视频已删除</string>
+    <string name="auto_delete_original">保存后自动删除原视频</string>
+    <string name="play_video_title">播放压缩视频</string>
+    <string name="open_in_external_player">在外部播放器中播放</string>
+    <string name="save_to_original_path">保存到原视频目录</string>
+    <string name="original_deleted_success">原视频已成功删除</string>
     <string name="info_title">设备与应用信息</string>
     <string name="info_copy_clipboard">复制到剪贴板</string>
     <string name="info_copied">已复制到剪贴板</string>
