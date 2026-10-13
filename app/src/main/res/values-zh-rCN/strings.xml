@@ -47,6 +47,12 @@
     <string name="resave_to_selected">重新保存至所选目录</string>
     <string name="original_folder_unknown">定位原视频目录…</string>
     <string name="original_deleted_success">原视频已成功删除</string>
+    <string name="saved_to_original">已保存至原视频目录</string>
+    <string name="storage_management">存储与原文件管理</string>
+    <string name="permission_needed_badge">需授权</string>
+    <string name="save_to_original_path_short">原视频目录</string>
+    <string name="default_album_short">默认相册</string>
+    <string name="freed_space">已释放 %1$s</string>
     <string name="info_title">设备与应用信息</string>
     <string name="info_copy_clipboard">复制到剪贴板</string>
     <string name="info_copied">已复制到剪贴板</string>

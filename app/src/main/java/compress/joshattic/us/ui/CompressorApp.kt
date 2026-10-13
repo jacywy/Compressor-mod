@@ -198,9 +198,10 @@ fun CompressorApp(viewModel: CompressorViewModel) {
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            viewModel.onMediaPermissionGranted(context)
-            pendingActionAfterPermission?.invoke()
-            pendingActionAfterPermission = null
+            viewModel.onMediaPermissionGranted(context) {
+                pendingActionAfterPermission?.invoke()
+                pendingActionAfterPermission = null
+            }
         } else {
             Toast.makeText(context, context.getString(R.string.permission_needed_for_original), Toast.LENGTH_SHORT).show()
             pendingActionAfterPermission = null
@@ -444,9 +445,20 @@ fun CompressorApp(viewModel: CompressorViewModel) {
                                                     if (hasCustomLocation ||
                                                         android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q
                                                     ) {
-                                                        viewModel.saveCompressedOutput(context) { success ->
-                                                            if (success && state.autoDeleteOriginal && !state.isOriginalDeleted) {
-                                                                deleteOriginalVideo()
+                                                        if (state.saveToOriginalDirectory && !viewModel.hasMediaPermission(context)) {
+                                                            pendingActionAfterPermission = {
+                                                                viewModel.saveCompressedOutput(context) { success ->
+                                                                    if (success && state.autoDeleteOriginal && !state.isOriginalDeleted) {
+                                                                        deleteOriginalVideo()
+                                                                    }
+                                                                }
+                                                            }
+                                                            mediaPermissionLauncher.launch(requiredMediaPermission)
+                                                        } else {
+                                                            viewModel.saveCompressedOutput(context) { success ->
+                                                                if (success && state.autoDeleteOriginal && !state.isOriginalDeleted) {
+                                                                    deleteOriginalVideo()
+                                                                }
                                                             }
                                                         }
                                                     } else {
@@ -462,11 +474,10 @@ fun CompressorApp(viewModel: CompressorViewModel) {
                                                     mediaPermissionLauncher.launch(requiredMediaPermission)
                                                 },
                                                 onToggleSaveToOriginal = { enabled ->
+                                                    viewModel.setSaveToOriginalDirectory(enabled)
                                                     if (enabled && !viewModel.hasMediaPermission(context)) {
-                                                        pendingActionAfterPermission = { viewModel.setSaveToOriginalDirectory(true) }
+                                                        pendingActionAfterPermission = null
                                                         mediaPermissionLauncher.launch(requiredMediaPermission)
-                                                    } else {
-                                                        viewModel.setSaveToOriginalDirectory(enabled)
                                                     }
                                                 },
                                                 onToggleAutoDeleteOriginal = { viewModel.setAutoDeleteOriginal(it) },

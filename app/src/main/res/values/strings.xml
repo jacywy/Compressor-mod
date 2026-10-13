@@ -49,6 +49,12 @@
     <string name="resave_to_selected">Re-save to Selected Destination</string>
     <string name="original_folder_unknown">Locating original folder…</string>
     <string name="original_deleted_success">Original video deleted successfully</string>
+    <string name="saved_to_original">Saved to Original Folder</string>
+    <string name="storage_management">Storage &amp; Files</string>
+    <string name="permission_needed_badge">Permission Needed</string>
+    <string name="save_to_original_path_short">Original Folder</string>
+    <string name="default_album_short">Default Album</string>
+    <string name="freed_space">Freed %1$s</string>
     
     <string name="info_title">Device &amp; App Info</string>
     <string name="info_copy_clipboard">Copy to Clipboard</string>

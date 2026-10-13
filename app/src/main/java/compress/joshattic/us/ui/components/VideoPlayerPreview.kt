@@ -63,7 +63,7 @@ fun VideoPlayerPreview(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 200.dp, max = 280.dp),
+                .heightIn(min = 150.dp, max = 180.dp),
             contentAlignment = Alignment.Center
         ) {
             AndroidView(

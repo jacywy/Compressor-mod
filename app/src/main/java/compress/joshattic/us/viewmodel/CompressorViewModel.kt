@@ -509,7 +509,7 @@ class CompressorViewModel(application: Application) : AndroidViewModel(applicati
         return CanonicalMediaInfo(canonicalUri, relativePath, absolutePath)
     }
 
-    fun onMediaPermissionGranted(context: Context) {
+    fun onMediaPermissionGranted(context: Context, onComplete: ((Boolean) -> Unit)? = null) {
         val current = _uiState.value
         val uri = current.selectedUri ?: return
         viewModelScope.launch(Dispatchers.IO) {
@@ -522,6 +522,9 @@ class CompressorViewModel(application: Application) : AndroidViewModel(applicati
                     originalAbsolutePath = mediaInfo.absolutePath ?: it.originalAbsolutePath,
                     deleteError = null
                 )
+            }
+            withContext(Dispatchers.Main) {
+                onComplete?.invoke(!mediaInfo.relativePath.isNullOrBlank() || mediaInfo.canonicalUri != null)
             }
         }
     }
@@ -1660,7 +1663,10 @@ class CompressorViewModel(application: Application) : AndroidViewModel(applicati
                      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
                          _uiState.value.autoSaveToPhotos
                      ) {
-                         saveCompressedOutput(getApplication())
+                         val current = _uiState.value
+                         if (!current.saveToOriginalDirectory || !current.originalRelativePath.isNullOrBlank()) {
+                             saveCompressedOutput(getApplication())
+                         }
                      }
                 }
 
