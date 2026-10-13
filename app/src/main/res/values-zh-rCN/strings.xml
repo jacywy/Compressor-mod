@@ -45,6 +45,7 @@
     <string name="permission_needed_for_original">需要媒体读取权限以定位原视频</string>
     <string name="permission_grant">授予权限</string>
     <string name="resave_to_selected">重新保存至所选目录</string>
+    <string name="original_folder_unknown">定位原视频目录…</string>
     <string name="original_deleted_success">原视频已成功删除</string>
     <string name="info_title">设备与应用信息</string>
     <string name="info_copy_clipboard">复制到剪贴板</string>

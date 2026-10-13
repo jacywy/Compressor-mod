@@ -47,6 +47,7 @@
     <string name="permission_needed_for_original">Media permission required to locate original video</string>
     <string name="permission_grant">Grant Permission</string>
     <string name="resave_to_selected">Re-save to Selected Destination</string>
+    <string name="original_folder_unknown">Locating original folder…</string>
     <string name="original_deleted_success">Original video deleted successfully</string>
     
     <string name="info_title">Device &amp; App Info</string>
