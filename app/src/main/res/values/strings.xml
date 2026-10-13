@@ -41,6 +41,12 @@
     <string name="play_video_title">Play Compressed Video</string>
     <string name="open_in_external_player">Open in External Player</string>
     <string name="save_to_original_path">Save to Original Folder</string>
+    <string name="save_location">Save Destination</string>
+    <string name="save_to_default_album">Default Album (Movies/Compressor)</string>
+    <string name="save_to_custom_folder">Custom Folder</string>
+    <string name="permission_needed_for_original">Media permission required to locate original video</string>
+    <string name="permission_grant">Grant Permission</string>
+    <string name="resave_to_selected">Re-save to Selected Destination</string>
     <string name="original_deleted_success">Original video deleted successfully</string>
     
     <string name="info_title">Device &amp; App Info</string>

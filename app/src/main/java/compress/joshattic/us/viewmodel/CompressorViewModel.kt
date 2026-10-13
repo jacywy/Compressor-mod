@@ -13,6 +13,11 @@ import android.media.MediaFormat
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.Manifest
+import android.content.ContentUris
+import android.content.pm.PackageManager
+import android.media.MediaScannerConnection
+import androidx.core.content.ContextCompat
 import android.provider.DocumentsContract
 import android.provider.MediaStore
 import java.text.SimpleDateFormat
@@ -328,6 +333,199 @@ class CompressorViewModel(application: Application) : AndroidViewModel(applicati
             }
         }
 
+    data class CanonicalMediaInfo(
+        val canonicalUri: Uri?,
+        val relativePath: String?,
+        val absolutePath: String?
+    )
+
+    fun hasMediaPermission(context: Context): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_VIDEO) == PackageManager.PERMISSION_GRANTED
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+        } else {
+            true
+        }
+    }
+
+    fun resolveCanonicalMediaInfo(
+        context: Context,
+        uri: Uri,
+        originalName: String?,
+        size: Long
+    ): CanonicalMediaInfo {
+        var canonicalUri: Uri? = null
+        var relativePath: String? = null
+        var absolutePath: String? = null
+
+        // 1. Direct canonical MediaStore item
+        if (uri.authority == "media" && uri.path?.contains("video") == true && uri.lastPathSegment?.toLongOrNull() != null) {
+            canonicalUri = uri
+            try {
+                val proj = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    arrayOf(MediaStore.Video.Media.RELATIVE_PATH, MediaStore.Video.Media.DATA)
+                } else {
+                    arrayOf(MediaStore.Video.Media.DATA)
+                }
+                context.contentResolver.query(uri, proj, null, null, null)?.use { c ->
+                    if (c.moveToFirst()) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            val relIdx = c.getColumnIndex(MediaStore.Video.Media.RELATIVE_PATH)
+                            if (relIdx != -1 && !c.isNull(relIdx)) relativePath = c.getString(relIdx)
+                        }
+                        val dataIdx = c.getColumnIndex(MediaStore.Video.Media.DATA)
+                        if (dataIdx != -1 && !c.isNull(dataIdx)) absolutePath = c.getString(dataIdx)
+                    }
+                }
+            } catch (_: Exception) {}
+            return CanonicalMediaInfo(canonicalUri, relativePath, absolutePath)
+        }
+
+        // 2. Document URI from SAF
+        if (DocumentsContract.isDocumentUri(context, uri)) {
+            val docId = DocumentsContract.getDocumentId(uri)
+            if (uri.authority == "com.android.providers.media.documents") {
+                val id = docId.split(":").lastOrNull()?.toLongOrNull()
+                if (id != null) {
+                    canonicalUri = ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, id)
+                    try {
+                        val proj = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            arrayOf(MediaStore.Video.Media.RELATIVE_PATH, MediaStore.Video.Media.DATA)
+                        } else {
+                            arrayOf(MediaStore.Video.Media.DATA)
+                        }
+                        context.contentResolver.query(canonicalUri, proj, null, null, null)?.use { c ->
+                            if (c.moveToFirst()) {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                    val relIdx = c.getColumnIndex(MediaStore.Video.Media.RELATIVE_PATH)
+                                    if (relIdx != -1 && !c.isNull(relIdx)) relativePath = c.getString(relIdx)
+                                }
+                                val dataIdx = c.getColumnIndex(MediaStore.Video.Media.DATA)
+                                if (dataIdx != -1 && !c.isNull(dataIdx)) absolutePath = c.getString(dataIdx)
+                            }
+                        }
+                    } catch (_: Exception) {}
+                    return CanonicalMediaInfo(canonicalUri, relativePath, absolutePath)
+                }
+            } else if (uri.authority == "com.android.externalstorage.documents") {
+                val parts = docId.split(":")
+                if (parts.size > 1) {
+                    val rel = parts[1]
+                    val lastSlash = rel.lastIndexOf('/')
+                    if (lastSlash != -1) {
+                        relativePath = rel.substring(0, lastSlash + 1)
+                    }
+                }
+            }
+        }
+
+        // 3. Check if URI path ends with a numeric ID (Photo Picker or content://.../media/12345)
+        val numericId = uri.lastPathSegment?.toLongOrNull()
+        if (numericId != null) {
+            val candidate = ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, numericId)
+            try {
+                val proj = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    arrayOf(MediaStore.Video.Media._ID, MediaStore.Video.Media.RELATIVE_PATH, MediaStore.Video.Media.DATA)
+                } else {
+                    arrayOf(MediaStore.Video.Media._ID, MediaStore.Video.Media.DATA)
+                }
+                context.contentResolver.query(candidate, proj, null, null, null)?.use { c ->
+                    if (c.moveToFirst()) {
+                        canonicalUri = candidate
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            val relIdx = c.getColumnIndex(MediaStore.Video.Media.RELATIVE_PATH)
+                            if (relIdx != -1 && !c.isNull(relIdx)) relativePath = c.getString(relIdx)
+                        }
+                        val dataIdx = c.getColumnIndex(MediaStore.Video.Media.DATA)
+                        if (dataIdx != -1 && !c.isNull(dataIdx)) absolutePath = c.getString(dataIdx)
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+
+        // 4. Query MediaStore by DISPLAY_NAME and SIZE
+        if (canonicalUri == null || relativePath.isNullOrBlank()) {
+            try {
+                val proj = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    arrayOf(MediaStore.Video.Media._ID, MediaStore.Video.Media.RELATIVE_PATH, MediaStore.Video.Media.DATA)
+                } else {
+                    arrayOf(MediaStore.Video.Media._ID, MediaStore.Video.Media.DATA)
+                }
+
+                fun runQuery(selection: String, args: Array<String>): Boolean {
+                    context.contentResolver.query(
+                        MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+                        proj,
+                        selection,
+                        args,
+                        "${MediaStore.Video.Media._ID} DESC"
+                    )?.use { c ->
+                        if (c.moveToFirst()) {
+                            val idIdx = c.getColumnIndex(MediaStore.Video.Media._ID)
+                            if (idIdx != -1) {
+                                val id = c.getLong(idIdx)
+                                canonicalUri = ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, id)
+                            }
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                val relIdx = c.getColumnIndex(MediaStore.Video.Media.RELATIVE_PATH)
+                                if (relIdx != -1 && !c.isNull(relIdx)) {
+                                    relativePath = c.getString(relIdx)
+                                }
+                            }
+                            val dataIdx = c.getColumnIndex(MediaStore.Video.Media.DATA)
+                            if (dataIdx != -1 && !c.isNull(dataIdx)) {
+                                absolutePath = c.getString(dataIdx)
+                            }
+                            return true
+                        }
+                    }
+                    return false
+                }
+
+                if (!originalName.isNullOrBlank() && size > 0) {
+                    val found = runQuery("${MediaStore.Video.Media.DISPLAY_NAME} = ? AND ${MediaStore.Video.Media.SIZE} = ?", arrayOf(originalName, size.toString()))
+                    if (!found) {
+                        runQuery("${MediaStore.Video.Media.DISPLAY_NAME} = ?", arrayOf(originalName))
+                    }
+                } else if (!originalName.isNullOrBlank()) {
+                    runQuery("${MediaStore.Video.Media.DISPLAY_NAME} = ?", arrayOf(originalName))
+                }
+            } catch (_: Exception) {}
+        }
+
+        // Fallback: If relativePath is still null but absolutePath is known
+        if (relativePath == null && !absolutePath.isNullOrBlank()) {
+            val file = File(absolutePath)
+            val parent = file.parentFile?.absolutePath
+            if (parent != null) {
+                val emulatedPrefix = "/storage/emulated/0/"
+                if (parent.startsWith(emulatedPrefix)) {
+                    relativePath = parent.removePrefix(emulatedPrefix).trimEnd('/') + "/"
+                }
+            }
+        }
+
+        return CanonicalMediaInfo(canonicalUri, relativePath, absolutePath)
+    }
+
+    fun onMediaPermissionGranted(context: Context) {
+        val current = _uiState.value
+        val uri = current.selectedUri ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            val mediaInfo = resolveCanonicalMediaInfo(context, uri, current.originalName, current.originalSize)
+            _uiState.update {
+                it.copy(
+                    hasMediaPermission = true,
+                    canonicalMediaUri = mediaInfo.canonicalUri ?: it.canonicalMediaUri,
+                    originalRelativePath = mediaInfo.relativePath ?: it.originalRelativePath,
+                    originalAbsolutePath = mediaInfo.absolutePath ?: it.originalAbsolutePath,
+                    deleteError = null
+                )
+            }
+        }
+    }
+
     fun updateSelectedUri(context: Context, uri: Uri) {
         viewModelScope.launch(Dispatchers.IO) {
             var size = 0L
@@ -339,7 +537,6 @@ class CompressorViewModel(application: Application) : AndroidViewModel(applicati
             var videoMime: String? = null
             var duration = 0L
             var originalName: String? = null
-            var relativePath: String? = null
 
             try {
                 val probe = probeTracks(context, uri).also {
@@ -372,25 +569,6 @@ class CompressorViewModel(application: Application) : AndroidViewModel(applicati
                     context.contentResolver.openFileDescriptor(uri, "r")?.use {
                         size = it.statSize
                     }
-                }
-
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    try {
-                        context.contentResolver.query(
-                            uri,
-                            arrayOf(MediaStore.Video.Media.RELATIVE_PATH),
-                            null,
-                            null,
-                            null
-                        )?.use { relCursor ->
-                            if (relCursor.moveToFirst()) {
-                                val relIdx = relCursor.getColumnIndex(MediaStore.Video.Media.RELATIVE_PATH)
-                                if (relIdx != -1 && !relCursor.isNull(relIdx)) {
-                                    relativePath = relCursor.getString(relIdx)
-                                }
-                            }
-                        }
-                    } catch (_: Exception) {}
                 }
 
                 val retriever = android.media.MediaMetadataRetriever()
@@ -447,9 +625,16 @@ class CompressorViewModel(application: Application) : AndroidViewModel(applicati
             val targetHeight = if (videoConfig.defaultTargetResolutionHeight > 0) getTargetHeight(videoConfig.defaultTargetResolutionHeight) else height
             val targetFpsVal = if (videoConfig.defaultTargetFps > 0 && fps >= videoConfig.defaultTargetFps) videoConfig.defaultTargetFps else 0
 
+            val hasPerm = hasMediaPermission(context)
+            val mediaInfo = resolveCanonicalMediaInfo(context, uri, originalName, size)
+
             _uiState.update { state ->
                 state.copy(
                     selectedUri = uri,
+                    canonicalMediaUri = mediaInfo.canonicalUri,
+                    hasMediaPermission = hasPerm,
+                    originalRelativePath = mediaInfo.relativePath,
+                    originalAbsolutePath = mediaInfo.absolutePath,
                     originalSize = size,
                     originalWidth = width,
                     originalHeight = height,
@@ -481,8 +666,8 @@ class CompressorViewModel(application: Application) : AndroidViewModel(applicati
                     saveSuccess = false,
                     isSaving = false,
                     hasShared = false,
-                    originalRelativePath = relativePath,
-                    isOriginalDeleted = false
+                    isOriginalDeleted = false,
+                    deleteError = null
                 ).autoAdjust(defaultTargetMb)
             }
         }
@@ -1971,6 +2156,22 @@ class CompressorViewModel(application: Application) : AndroidViewModel(applicati
                     }
                 }
 
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q && currentState.saveToOriginalDirectory && !currentState.originalAbsolutePath.isNullOrBlank()) {
+                    val targetDir = File(currentState.originalAbsolutePath).parentFile
+                    if (targetDir != null && targetDir.exists() && targetDir.canWrite()) {
+                        val destFile = File(targetDir, targetName)
+                        file.inputStream().use { input ->
+                            destFile.outputStream().use { out ->
+                                input.copyTo(out, COPY_BUFFER_BYTES)
+                            }
+                        }
+                        MediaScannerConnection.scanFile(context, arrayOf(destFile.absolutePath), arrayOf("video/mp4"), null)
+                        _uiState.update { it.copy(saveSuccess = true) }
+                        withContext(Dispatchers.Main) { onComplete?.invoke(true) }
+                        return@launch
+                    }
+                }
+
                 val collection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
                 } else {
@@ -2010,7 +2211,12 @@ class CompressorViewModel(application: Application) : AndroidViewModel(applicati
 
     fun setSaveToOriginalDirectory(enabled: Boolean) {
         prefs.edit().putBoolean("save_to_original_path", enabled).apply()
-        _uiState.update { it.copy(saveToOriginalDirectory = enabled) }
+        _uiState.update { it.copy(saveToOriginalDirectory = enabled, saveSuccess = false) }
+    }
+
+    fun resaveCompressedOutput(context: Context, onComplete: ((Boolean) -> Unit)? = null) {
+        _uiState.update { it.copy(saveSuccess = false) }
+        saveCompressedOutput(context, onComplete)
     }
 
     fun setAutoDeleteOriginal(enabled: Boolean) {
@@ -2019,7 +2225,7 @@ class CompressorViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     fun onOriginalDeleted() {
-        _uiState.update { it.copy(isOriginalDeleted = true) }
+        _uiState.update { it.copy(isOriginalDeleted = true, deleteError = null) }
     }
 
     fun deleteOriginalVideo(
@@ -2027,40 +2233,91 @@ class CompressorViewModel(application: Application) : AndroidViewModel(applicati
         onSenderRequired: (IntentSender) -> Unit,
         onSuccess: () -> Unit = {}
     ) {
-        val uri = _uiState.value.selectedUri ?: return
+        val currentState = _uiState.value
+        val canonicalUri = currentState.canonicalMediaUri ?: currentState.selectedUri ?: return
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    val pendingIntent = MediaStore.createDeleteRequest(context.contentResolver, listOf(uri))
+                    val targetUri = currentState.canonicalMediaUri
+                    if (targetUri == null) {
+                        val info = resolveCanonicalMediaInfo(
+                            context,
+                            currentState.selectedUri!!,
+                            currentState.originalName,
+                            currentState.originalSize
+                        )
+                        if (info.canonicalUri != null) {
+                            _uiState.update {
+                                it.copy(
+                                    canonicalMediaUri = info.canonicalUri,
+                                    originalRelativePath = info.relativePath ?: it.originalRelativePath,
+                                    originalAbsolutePath = info.absolutePath ?: it.originalAbsolutePath
+                                )
+                            }
+                            val pendingIntent = MediaStore.createDeleteRequest(context.contentResolver, listOf(info.canonicalUri))
+                            withContext(Dispatchers.Main) {
+                                onSenderRequired(pendingIntent.intentSender)
+                            }
+                            return@launch
+                        } else {
+                            withContext(Dispatchers.Main) {
+                                _uiState.update { it.copy(deleteError = getApplication<Application>().getString(R.string.permission_needed_for_original)) }
+                            }
+                            return@launch
+                        }
+                    }
+                    val pendingIntent = MediaStore.createDeleteRequest(context.contentResolver, listOf(targetUri))
                     withContext(Dispatchers.Main) {
                         onSenderRequired(pendingIntent.intentSender)
                     }
-                } else if (DocumentsContract.isDocumentUri(context, uri)) {
-                    val deleted = DocumentsContract.deleteDocument(context.contentResolver, uri)
+                } else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q) {
+                    try {
+                        val count = context.contentResolver.delete(canonicalUri, null, null)
+                        if (count > 0) {
+                            withContext(Dispatchers.Main) {
+                                onOriginalDeleted()
+                                onSuccess()
+                            }
+                        } else {
+                            withContext(Dispatchers.Main) {
+                                _uiState.update { it.copy(deleteError = getApplication<Application>().getString(R.string.delete_original_failed)) }
+                            }
+                        }
+                    } catch (e: RecoverableSecurityException) {
+                        withContext(Dispatchers.Main) {
+                            onSenderRequired(e.userAction.actionIntent.intentSender)
+                        }
+                    }
+                } else if (DocumentsContract.isDocumentUri(context, canonicalUri)) {
+                    val deleted = DocumentsContract.deleteDocument(context.contentResolver, canonicalUri)
                     if (deleted) {
                         withContext(Dispatchers.Main) {
                             onOriginalDeleted()
                             onSuccess()
                         }
+                    } else {
+                        withContext(Dispatchers.Main) {
+                            _uiState.update { it.copy(deleteError = getApplication<Application>().getString(R.string.delete_original_failed)) }
+                        }
                     }
                 } else {
-                    val count = context.contentResolver.delete(uri, null, null)
+                    val count = context.contentResolver.delete(canonicalUri, null, null)
                     if (count > 0) {
                         withContext(Dispatchers.Main) {
                             onOriginalDeleted()
                             onSuccess()
                         }
+                    } else {
+                        withContext(Dispatchers.Main) {
+                            _uiState.update { it.copy(deleteError = getApplication<Application>().getString(R.string.delete_original_failed)) }
+                        }
                     }
                 }
             } catch (e: Exception) {
-                if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q && e is RecoverableSecurityException) {
-                    withContext(Dispatchers.Main) {
-                        onSenderRequired(e.userAction.actionIntent.intentSender)
-                    }
-                } else {
-                    e.printStackTrace()
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
                     _uiState.update {
-                        it.copy(error = getApplication<Application>().getString(R.string.delete_original_failed) + ": " + e.message)
+                        it.copy(deleteError = getApplication<Application>().getString(R.string.delete_original_failed) + ": " + (e.localizedMessage ?: e.message))
                     }
                 }
             }

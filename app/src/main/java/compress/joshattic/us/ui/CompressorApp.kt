@@ -1,9 +1,11 @@
 package compress.joshattic.us.ui
 
 import compress.joshattic.us.ui.components.WhatsNewDialog
+import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.BackEventCompat
@@ -183,6 +185,28 @@ fun CompressorApp(viewModel: CompressorViewModel) {
     }
 
     val playVideoTitle = stringResource(R.string.play_video_title)
+
+    val requiredMediaPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        Manifest.permission.READ_MEDIA_VIDEO
+    } else {
+        Manifest.permission.READ_EXTERNAL_STORAGE
+    }
+
+    var pendingActionAfterPermission by remember { mutableStateOf<(() -> Unit)?>(null) }
+
+    val mediaPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            viewModel.onMediaPermissionGranted(context)
+            pendingActionAfterPermission?.invoke()
+            pendingActionAfterPermission = null
+        } else {
+            Toast.makeText(context, context.getString(R.string.permission_needed_for_original), Toast.LENGTH_SHORT).show()
+            pendingActionAfterPermission = null
+        }
+    }
+
     val deleteMediaLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult()
     ) { result ->
@@ -208,6 +232,11 @@ fun CompressorApp(viewModel: CompressorViewModel) {
     }
 
     fun deleteOriginalVideo() {
+        if (!viewModel.hasMediaPermission(context)) {
+            pendingActionAfterPermission = { deleteOriginalVideo() }
+            mediaPermissionLauncher.launch(requiredMediaPermission)
+            return
+        }
         viewModel.deleteOriginalVideo(
             context = context,
             onSenderRequired = { sender ->
@@ -428,7 +457,18 @@ fun CompressorApp(viewModel: CompressorViewModel) {
                                                 },
                                                 onPlayExternal = { playVideoExternally(state.compressedUri) },
                                                 onDeleteOriginal = { deleteOriginalVideo() },
-                                                onToggleSaveToOriginal = { viewModel.setSaveToOriginalDirectory(it) },
+                                                onRequestMediaPermission = {
+                                                    pendingActionAfterPermission = { viewModel.setSaveToOriginalDirectory(true) }
+                                                    mediaPermissionLauncher.launch(requiredMediaPermission)
+                                                },
+                                                onToggleSaveToOriginal = { enabled ->
+                                                    if (enabled && !viewModel.hasMediaPermission(context)) {
+                                                        pendingActionAfterPermission = { viewModel.setSaveToOriginalDirectory(true) }
+                                                        mediaPermissionLauncher.launch(requiredMediaPermission)
+                                                    } else {
+                                                        viewModel.setSaveToOriginalDirectory(enabled)
+                                                    }
+                                                },
                                                 onToggleAutoDeleteOriginal = { viewModel.setAutoDeleteOriginal(it) },
                                                 onCompressAnother = { viewModel.reset() },
                                                 onBack = { viewModel.reset() }

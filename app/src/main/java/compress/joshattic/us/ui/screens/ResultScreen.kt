@@ -19,12 +19,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Warning
@@ -39,6 +41,7 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -72,6 +75,7 @@ fun ResultScreen(
     onBack: () -> Unit,
     onPlayExternal: () -> Unit = {},
     onDeleteOriginal: () -> Unit = {},
+    onRequestMediaPermission: () -> Unit = {},
     onToggleSaveToOriginal: (Boolean) -> Unit = {},
     onToggleAutoDeleteOriginal: (Boolean) -> Unit = {}
 ) {
@@ -185,39 +189,117 @@ fun ResultScreen(
                 )
             }
 
-            // 2. 保存到原路径选项
-            if (!state.originalRelativePath.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                    ),
-                    modifier = Modifier.fillMaxWidth()
+            // 2. 保存位置卡片（常驻显示，支持单选原视频目录或默认相册）
+            Spacer(modifier = Modifier.height(16.dp))
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                ),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
                 ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Folder,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            stringResource(R.string.save_location),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // 选项 1：原视频目录
+                    val hasOriginalPath = !state.originalRelativePath.isNullOrBlank()
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                            .clickable {
+                                if (!state.hasMediaPermission) {
+                                    onRequestMediaPermission()
+                                }
+                                onToggleSaveToOriginal(true)
+                            }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
+                        RadioButton(
+                            selected = state.saveToOriginalDirectory,
+                            onClick = {
+                                if (!state.hasMediaPermission) {
+                                    onRequestMediaPermission()
+                                }
+                                onToggleSaveToOriginal(true)
+                            }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 stringResource(R.string.save_to_original_path),
                                 style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = if (state.saveToOriginalDirectory) FontWeight.Bold else FontWeight.Normal
+                            )
+                            if (hasOriginalPath) {
+                                Text(
+                                    state.originalRelativePath!!,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            } else if (!state.hasMediaPermission) {
+                                Text(
+                                    stringResource(R.string.permission_needed_for_original),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            } else {
+                                Text(
+                                    stringResource(R.string.original_folder_unknown),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+
+                    // 选项 2：默认相册 (Movies/Compressor)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onToggleSaveToOriginal(false) }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = !state.saveToOriginalDirectory,
+                            onClick = { onToggleSaveToOriginal(false) }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                stringResource(R.string.save_to_default_album),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = if (!state.saveToOriginalDirectory) FontWeight.Bold else FontWeight.Normal
                             )
                             Text(
-                                state.originalRelativePath,
+                                if (state.customOutputFolderName.isNullOrBlank()) "Movies/Compressor" else state.customOutputFolderName,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        Switch(
-                            checked = state.saveToOriginalDirectory,
-                            onCheckedChange = { onToggleSaveToOriginal(it) }
-                        )
                     }
                 }
             }
@@ -280,7 +362,13 @@ fun ResultScreen(
                             } else {
                                 var showDeleteDialog by remember { mutableStateOf(false) }
                                 OutlinedButton(
-                                    onClick = { showDeleteDialog = true },
+                                    onClick = {
+                                        if (!state.hasMediaPermission) {
+                                            onRequestMediaPermission()
+                                        } else {
+                                            showDeleteDialog = true
+                                        }
+                                    },
                                     colors = ButtonDefaults.outlinedButtonColors(
                                         contentColor = MaterialTheme.colorScheme.error
                                     ),
@@ -343,6 +431,16 @@ fun ResultScreen(
                                     )
                                 }
                             }
+                        }
+
+                        if (!state.deleteError.isNullOrBlank() && !state.isOriginalDeleted) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = state.deleteError,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error,
+                                fontWeight = FontWeight.Medium
+                            )
                         }
 
                         if (!state.isOriginalDeleted) {

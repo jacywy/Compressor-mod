@@ -69,7 +69,11 @@ data class CompressorUiState(
     /** Only meaningful on Android 10+; forced off on older versions. */
     val autoSaveToPhotos: Boolean = false,
     val originalRelativePath: String? = null,
+    val originalAbsolutePath: String? = null,
+    val canonicalMediaUri: Uri? = null,
+    val hasMediaPermission: Boolean = false,
     val isOriginalDeleted: Boolean = false,
+    val deleteError: String? = null,
     val saveToOriginalDirectory: Boolean = true,
     val autoDeleteOriginal: Boolean = false,
     val customOutputTreeUri: String? = null,
