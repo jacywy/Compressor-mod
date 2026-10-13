@@ -671,11 +671,7 @@ fun ResultScreen(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             val saveLabel = if (state.saveToOriginalDirectory) {
-                                if (!state.hasMediaPermission) {
-                                    stringResource(R.string.save_to_original_path) + " (${stringResource(R.string.permission_needed_badge)})"
-                                } else {
-                                    stringResource(R.string.save_to_original_path)
-                                }
+                                stringResource(R.string.save_to_original_path)
                             } else if (state.customOutputTreeUri.isNullOrBlank()) {
                                 stringResource(R.string.save_to_photos)
                             } else {
@@ -684,7 +680,7 @@ fun ResultScreen(
                             Text(
                                 saveLabel,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 11.5.sp,
+                                fontSize = 13.sp,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )

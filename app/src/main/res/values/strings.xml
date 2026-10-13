@@ -42,7 +42,7 @@
     <string name="open_in_external_player">Open in External Player</string>
     <string name="save_to_original_path">Save to Original Folder</string>
     <string name="save_location">Save Destination</string>
-    <string name="save_to_default_album">Default Album (Movies/Compressor)</string>
+    <string name="save_to_default_album">Default Folder (Movies/Compressor)</string>
     <string name="save_to_custom_folder">Custom Folder</string>
     <string name="permission_needed_for_original">Media permission required to locate original video</string>
     <string name="permission_grant">Grant Permission</string>
@@ -53,7 +53,7 @@
     <string name="storage_management">Storage &amp; Files</string>
     <string name="permission_needed_badge">Permission Needed</string>
     <string name="save_to_original_path_short">Original Folder</string>
-    <string name="default_album_short">Default Album</string>
+    <string name="default_album_short">Default Folder</string>
     <string name="freed_space">Freed %1$s</string>
     
     <string name="info_title">Device &amp; App Info</string>
