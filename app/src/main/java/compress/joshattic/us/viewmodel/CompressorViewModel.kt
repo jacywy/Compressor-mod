@@ -339,6 +339,7 @@ class CompressorViewModel(application: Application) : AndroidViewModel(applicati
             var videoMime: String? = null
             var duration = 0L
             var originalName: String? = null
+            var relativePath: String? = null
 
             try {
                 val probe = probeTracks(context, uri).also {
@@ -373,7 +374,6 @@ class CompressorViewModel(application: Application) : AndroidViewModel(applicati
                     }
                 }
 
-                var relativePath: String? = null
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     try {
                         context.contentResolver.query(
