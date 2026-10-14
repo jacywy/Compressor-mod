@@ -5,7 +5,9 @@
     <string name="saved">Saved</string>
     <string name="saving">Saving…</string>
     <string name="save_action">Save</string>
-    <string name="save_to_photos">Save to Photos</string>
+    <string name="save_to_photos">Save to Default Folder</string>
+    <string name="save_to_default_folder">Save to Default Folder</string>
+    <string name="saved_to_default_folder">Saved to Default Folder</string>
     <string name="compress_another_video">Compress Another Video</string>
     <string name="buy_coffee">☕ Happy with Compressor? Buy me a coffee!</string>
     <string name="share_video_title">Share Compressed Video</string>
@@ -31,7 +33,7 @@
     <string name="h265_efficient">H.265 (Efficient)</string>
     <string name="h264_compat">H.264 (Compat)</string>
     
-    <string name="delete_original">Delete Original Video</string>
+    <string name="delete_original">Delete Original</string>
     <string name="delete_original_success">Video deleted successfully</string>
     <string name="delete_original_failed">Failed to delete video</string>
     <string name="delete_confirm_title">Delete Original?</string>
@@ -55,6 +57,7 @@
     <string name="save_to_original_path_short">Original Folder</string>
     <string name="default_album_short">Default Folder</string>
     <string name="freed_space">Freed %1$s</string>
+    <string name="original_project_github">Original Project (GitHub)</string>
     
     <string name="info_title">Device &amp; App Info</string>
     <string name="info_copy_clipboard">Copy to Clipboard</string>
@@ -190,9 +193,9 @@
     <string name="auto_save_photos_title">Automatically save</string>
     <string name="auto_save_photos_subtitle">Automatically save compressed videos after compression</string>
     <string name="output_location_title">Save location</string>
-    <string name="output_location_default">Photos (Movies/Compressor)</string>
+    <string name="output_location_default">Default Folder (Movies/Compressor)</string>
     <string name="output_location_subtitle">Where compressed videos are saved by default</string>
-    <string name="output_location_reset_title">Use default (Photos)</string>
+    <string name="output_location_reset_title">Use default folder</string>
     <string name="output_location_reset_subtitle">Reset save location to Movies/Compressor</string>
 
     <string name="filename_builder_title">Filename builder</string>

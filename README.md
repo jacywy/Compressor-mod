@@ -13,7 +13,7 @@ Lightning fast, ad free, super lightweight native video compressor for Android.
 
 ![Kotlin](https://img.shields.io/badge/kotlin-%237F52FF.svg?style=for-the-badge&logo=kotlin&logoColor=white) 
 ![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white) 
-![License](https://img.shields.io/github/license/JoshAtticus/Compressor?style=for-the-badge)
+![License](https://img.shields.io/badge/License-GPL--3.0-blue?style=for-the-badge)
 
 <br>
 
@@ -41,24 +41,6 @@ This fork enhances the original [Compressor](https://github.com/JoshAtticus/Comp
 - 📁 **保存至原视频目录**：支持将压缩后的视频直接写入原视频所在目录（如 `DCIM/Camera/`），无需再手动移动相册文件；随时支持一键切回默认目录（`Movies/Compressor`）。
 - 🗑️ **安全删除原视频释放空间**：对压缩效果满意后，可一键删除原视频释放手机空间，支持“保存后自动删除原视频”选项；全兼容 Android 10 至 Android 15 的 Scoped Storage 存储规范。
 - ⚡ **单屏零滚动极简交互**：重构压缩结果页为极致紧凑单屏设计，无需上下滑动即可完成预览、保存路径选择、原文件删除及分享；支持主按钮一键授权并自动完成保存。
-
----
-
-## Stats & Downloads
-
-[![RB Status](https://shields.rbtlog.dev/simple/compress.joshattic.us?style=for-the-badge)](https://shields.rbtlog.dev/compress.joshattic.us) ![IzzyOnDroid Version](https://img.shields.io/endpoint?url=https://apt.izzysoft.de/fdroid/api/v1/shield/compress.joshattic.us&label=IzzyOnDroid%20Version&style=for-the-badge) ![Stars](https://img.shields.io/github/stars/JoshAtticus/Compressor?style=for-the-badge) ![Forks](https://img.shields.io/github/forks/JoshAtticus/Compressor?style=for-the-badge)
-
-[![GitHub Downloads (all assets, all releases)](https://img.shields.io/endpoint?style=for-the-badge&url=https%3A%2F%2Fcobalt-merry-fresh.joshatticus.workers.dev?v=2)](https://github.com/JoshAtticus/Compressor/releases) [![IzzyOnDroid Downloads (This year)](https://img.shields.io/badge/dynamic/json?url=https://dlstats.izzyondroid.org/iod-stats-collector/stats/basic/yearly/rolling.json&query=$.['compress.joshattic.us']&label=IzzyOnDroid%20yearly%20downloads&style=for-the-badge)](https://apt.izzysoft.de/packages/compress.joshattic.us) [![Google Play Downloads](https://img.shields.io/endpoint?color=green&style=for-the-badge&url=https%3A%2F%2Fplay.cuzi.workers.dev%2Fplay%3Fi%3Dcompress.joshattic.us%26gl%3DUS%26hl%3Den%26l%3DGoogle%2520Play%2520Store%2520Downloads%26m%3D%24totalinstalls)](https://play.google.com/store/apps/details?id=compress.joshattic.us)
-
----
-
-Do you like Compressor? Consider supporting development by [buying me a coffee](https://www.buymeacoffee.com/joshatticus) ☕️
-
-You can also donate with crypto:
-- **Bitcoin:** `bc1q8hkcv5xejcg4n4vf5839pqytp87v92rtgyyccr`
-- **Ethereum:** `0xC5Ae73a73F83CF48ed1Cb832ccb9Ca5ff1776EC9`
-- **Litecoin:** `ltc1qmf9s65cwk65rlepjme4auqhw7t2wz98f00n3t4`
-- **Solana Mainnet:** `HSkCeCd8BzabeVJTzrqcFYvsRmSGLrrDdtZ61oYBgNoD`
 
 ---
 
@@ -239,8 +221,3 @@ Compressor wouldn't be possible without these amazing people
 
 I would like to acknowledge that Compressor has used AI language models to assist in translation. Should you find any issues in translation, please open a bug report or a pull request so they can be fixed. You can also help translate Compressor on [Crowdin](https://l.joshattic.us/rHkokL)
 
----
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/chart?repos=JoshAtticus/Compressor&type=date&legend=top-left&sealed_token=sNTeAN-m_zFqDfeGZd5lJAfsf4y3KjmvJR7uXX32il2bO6AFPFeqr7UiNveSw0YOrLwlol6zew0GOlZa21PNAzzf3XQLOhQCyoxJ3prS4EAmbhp3MOq_yg)](https://www.star-history.com/?type=date&repos=JoshAtticus%2FCompressor)

@@ -277,7 +277,7 @@ fun InfoDialog(
                 Spacer(modifier = Modifier.height(8.dp))
                 
                 TextButton(
-                    onClick = { uriHandler.openUri("https://github.com/JoshAtticus/Compressor") },
+                    onClick = { uriHandler.openUri("https://github.com/jacywy/Compressor-mod") },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(stringResource(R.string.view_on_github))

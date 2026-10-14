@@ -3,6 +3,7 @@ package compress.joshattic.us.model
 import android.os.Build
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Movie
@@ -106,7 +107,7 @@ fun rememberSearchableSettings(
     val enableAllCodecs = stringResource(R.string.enable_all_codecs)
     val headerHardwareCodecs = stringResource(R.string.header_hardware_codecs)
     val viewOnGithub = stringResource(R.string.view_on_github)
-    val buyMeACoffee = stringResource(R.string.buy_me_a_coffee)
+    val originalProjectGithub = stringResource(R.string.original_project_github)
     val infoCopyClipboard = stringResource(R.string.info_copy_clipboard)
     val headerLinksActions = stringResource(R.string.header_links_actions)
 
@@ -216,8 +217,8 @@ fun rememberSearchableSettings(
         settings.add(SearchableSetting(infoAndroid, "Android ${Build.VERSION.RELEASE}", aboutTitle, "about", Icons.Default.Info, onNavigateToAbout))
         settings.add(SearchableSetting(infoSupportedCodecs, codecsSupportedCount, aboutTitle, "about", Icons.Default.Info, onNavigateToAbout))
         settings.add(SearchableSetting(enableAllCodecs, headerHardwareCodecs, aboutTitle, "about", Icons.Default.Info, onNavigateToAbout))
-        settings.add(SearchableSetting(viewOnGithub, "https://github.com/JoshAtticus/Compressor", aboutTitle, "about", Icons.Default.Build, onNavigateToAbout))
-        settings.add(SearchableSetting(buyMeACoffee, "https://buymeacoffee.com/joshatticus", aboutTitle, "about", Icons.Default.Favorite, onNavigateToAbout))
+        settings.add(SearchableSetting(viewOnGithub, "https://github.com/jacywy/Compressor-mod", aboutTitle, "about", Icons.Default.Build, onNavigateToAbout))
+        settings.add(SearchableSetting(originalProjectGithub, "https://github.com/JoshAtticus/Compressor", aboutTitle, "about", Icons.Default.Code, onNavigateToAbout))
         settings.add(SearchableSetting(infoCopyClipboard, headerLinksActions, aboutTitle, "about", Icons.Default.Info, onNavigateToAbout))
 
         settings

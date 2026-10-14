@@ -15,17 +15,30 @@ android {
     }
 
     defaultConfig {
-        applicationId = "compress.joshattic.us"
+        applicationId = "compress.joshattic.us.jacywymod"
         minSdk = 24
         targetSdk = 37
         versionCode = 28
-        versionName = "1.6.5"
+        versionName = "1.6.5mod"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("modSigning") {
+            storeFile = file("${rootDir}/keystore/mod.keystore")
+            storePassword = "compressormod"
+            keyAlias = "compressormod"
+            keyPassword = "compressormod"
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("modSigning")
+        }
         release {
+            signingConfig = signingConfigs.getByName("modSigning")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

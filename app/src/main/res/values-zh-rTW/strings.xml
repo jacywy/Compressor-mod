@@ -6,7 +6,9 @@
     <string name="saved">已儲存</string>
     <string name="saving">儲存中…</string>
     <string name="save_action">儲存</string>
-    <string name="save_to_photos">儲存至相片</string>
+    <string name="save_to_photos">儲存至預設目錄</string>
+    <string name="save_to_default_folder">儲存至預設目錄</string>
+    <string name="saved_to_default_folder">已儲存至預設目錄</string>
     <string name="compress_another_video">壓縮另一個影片</string>
     <string name="buy_coffee">☕ 喜歡 Compressor？請我喝杯咖啡！</string>
     <string name="share_video_title">分享壓縮後的影片</string>
@@ -53,6 +55,7 @@
     <string name="save_to_original_path_short">原始影片目錄</string>
     <string name="default_album_short">預設目錄</string>
     <string name="freed_space">已釋放 %1$s</string>
+    <string name="original_project_github">原作 GitHub 專案</string>
     <string name="info_title">裝置與應用程式資訊</string>
     <string name="info_copy_clipboard">複製至剪貼簿</string>
     <string name="info_copied">已複製至剪貼簿</string>
@@ -172,9 +175,9 @@
     <string name="auto_save_photos_title">自動儲存</string>
     <string name="auto_save_photos_subtitle">壓縮完成後自動儲存影片</string>
     <string name="output_location_title">儲存位置</string>
-    <string name="output_location_default">相簿 (Movies/Compressor)</string>
+    <string name="output_location_default">預設目錄 (Movies/Compressor)</string>
     <string name="output_location_subtitle">壓縮後的影片預設儲存目錄</string>
-    <string name="output_location_reset_title">使用預設（相片）</string>
+    <string name="output_location_reset_title">使用預設目錄</string>
     <string name="output_location_reset_subtitle">重置儲存位置為 電影/Compressor</string>
     <string name="filename_builder_title">檔名建立器</string>
     <string name="filename_builder_subtitle">拖放標籤進行重新排序、新增與移除。</string>

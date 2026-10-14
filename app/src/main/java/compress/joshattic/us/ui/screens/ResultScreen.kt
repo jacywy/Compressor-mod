@@ -656,12 +656,13 @@ fun ResultScreen(
                                     if (state.saveToOriginalDirectory) {
                                         R.string.saved_to_original
                                     } else {
-                                        R.string.saved
+                                        R.string.saved_to_default_folder
                                     }
                                 ),
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
-                                maxLines = 1
+                                fontSize = 12.5.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         } else {
                             Icon(
@@ -673,14 +674,14 @@ fun ResultScreen(
                             val saveLabel = if (state.saveToOriginalDirectory) {
                                 stringResource(R.string.save_to_original_path)
                             } else if (state.customOutputTreeUri.isNullOrBlank()) {
-                                stringResource(R.string.save_to_photos)
+                                stringResource(R.string.save_to_default_folder)
                             } else {
                                 stringResource(R.string.save_to_folder)
                             }
                             Text(
                                 saveLabel,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
+                                fontSize = 12.5.sp,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -688,41 +689,24 @@ fun ResultScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
-                // 次级辅助按钮：紧凑单行水平排列
-                Row(
+                // 次级辅助按钮：居中单行按钮
+                Box(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    contentAlignment = Alignment.Center
                 ) {
                     TextButton(
                         onClick = {
                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                             onCompressAnother()
                         },
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
                     ) {
                         Text(
                             stringResource(R.string.compress_another_video),
                             fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp
-                        )
-                    }
-
-                    TextButton(
-                        onClick = {
-                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                            uriHandler.openUri("https://buymeacoffee.com/joshattic")
-                        },
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            stringResource(R.string.buy_coffee),
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.tertiary,
-                            fontSize = 11.sp
+                            fontSize = 13.sp
                         )
                     }
                 }
