@@ -17,7 +17,6 @@ Lightning fast, ad free, super lightweight native video compressor for Android.
 
 <br>
 
-<img src="assets/select.jpg" alt="Screenshot 3" width="24%"/> <img src="assets/settings.jpg" alt="Screenshot 1" width="24%"/> <img src="assets/compressing.jpg" alt="Screenshot 2" width="24%"> <img src="assets/done.jpg" alt="Screenshot 4" width="24%"/>
 </div>
 
 ---
